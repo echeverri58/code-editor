@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor de Código y Texto Avanzado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .editor-container {
+            grid-template-columns: auto 1fr;
+        }
+        .line-numbers {
+            user-select: none;
+            text-align: right;
+        }
+        .tab.active {
+            border-bottom: 2px solid #3b82f6;
+        }
+        .editor-content {
+            tab-size: 4;
+            white-space: pre;
+        }
+        .editor-content:focus {
+            outline: none;
+        }
+        .gutter {
+            background-color: #1e293b;
+            border-right: 1px solid #334155;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            z-index: 1;
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        .format-btn.active {
+            background-color: #3b82f6;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-200 h-screen flex flex-col overflow-hidden">
+    <!-- Barra de herramientas -->
+    <div class="bg-slate-800 px-4 py-2 flex items-center justify-between border-b border-slate-700">
+        <div class="flex items-center space-x-4">
+            <h1 class="text-xl font-bold text-blue-400">
+                <i class="fas fa-code mr-2"></i>John Charcos Editor
+            </h1>
+            <div class="flex space-x-2">
+                <button id="new-tab" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm">
+                    <i class="fas fa-plus mr-1"></i>Nuevo
+                </button>
+                <div class="dropdown relative">
+                    <button class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm">
+                        <i class="fas fa-save mr-1"></i>Guardar como
+                        <i class="fas fa-caret-down ml-1"></i>
+                    </button>
+                    <div class="dropdown-content bg-slate-800 rounded shadow-lg mt-1">
+                        <button class="save-format block w-full text-left px-4 py-2 hover:bg-slate-700" data-format="txt">Texto (.txt)</button>
+                        <button class="save-format block w-full text-left px-4 py-2 hover:bg-slate-700" data-format="rtf">RTF (.rtf)</button>
+                        <button class="save-format block w-full text-left px-4 py-2 hover:bg-slate-700" data-format="html">HTML (.html)</button>
+                        <button class="save-format block w-full text-left px-4 py-2 hover:bg-slate-700" data-format="css">CSS (.css)</button>
+                        <button class="save-format block w-full text-left px-4 py-2 hover:bg-slate-700" data-format="js">JavaScript (.js)</button>
+                    </div>
+                </div>
+            </div>
+            <div class="flex space-x-1 ml-4">
+                <button id="bold-btn" class="format-btn px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm" title="Negrita">
+                    <i class="fas fa-bold"></i>
+                </button>
+                <button id="italic-btn" class="format-btn px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm" title="Cursiva">
+                    <i class="fas fa-italic"></i>
+                </button>
+                <button id="underline-btn" class="format-btn px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm" title="Subrayado">
+                    <i class="fas fa-underline"></i>
+                </button>
+                <button id="strike-btn" class="format-btn px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm" title="Tachado">
+                    <i class="fas fa-strikethrough"></i>
+                </button>
+                <button id="list-btn" class="format-btn px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm" title="Lista">
+                    <i class="fas fa-list-ul"></i>
+                </button>
+                <button id="olist-btn" class="format-btn px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm" title="Lista numerada">
+                    <i class="fas fa-list-ol"></i>
+                </button>
+            </div>
+        </div>
+        <div class="flex items-center space-x-4">
+            <div id="file-type" class="text-sm text-slate-400">
+                <i class="fas fa-code-branch mr-1"></i>JavaScript
+            </div>
+            <button id="toggle-theme" class="text-slate-400 hover:text-slate-200">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Pestañas -->
+    <div id="tabs" class="bg-slate-800 px-2 flex border-b border-slate-700 overflow-x-auto">
+        <div class="tab active flex items-center px-3 py-2 text-sm cursor-pointer bg-slate-900">
+            <span>index.js</span>
+            <button class="ml-2 text-slate-400 hover:text-slate-200">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Área del editor -->
+    <div id="editor-area" class="flex-1 overflow-hidden">
+        <div class="editor-container grid grid-cols-editor h-full">
+            <!-- Números de línea -->
+            <div class="gutter px-3 py-2 overflow-y-auto line-numbers text-slate-500 text-right font-mono text-sm">
+                <div>1</div>
+                <div>2</div>
+                <div>3</div>
+                <div>4</div>
+                <div>5</div>
+                <div>6</div>
+                <div>7</div>
+                <div>8</div>
+                <div>9</div>
+                <div>10</div>
+            </div>
+            
+            <!-- Contenido del editor -->
+            <div id="rich-text-editor" class="editor-content bg-slate-900 text-slate-200 p-2 font-mono text-sm w-full h-full resize-none overflow-auto border-l border-slate-700" contenteditable="true" spellcheck="false">
+// Escribe tu código o texto aquí
+function saludar(nombre) {
+    return `Hola, ${nombre}!`;
+}
+
+const mensaje = saludar("Mundo");
+console.log(mensaje);
+
+// Ejemplo de función
+function sumar(a, b) {
+    return a + b;
+}
+
+// Presiona Ctrl+S para guardar
+            </div>
+        </div>
+    </div>
+
+    <!-- Barra de estado -->
+    <div class="bg-slate-800 px-4 py-1 text-xs flex justify-between items-center border-t border-slate-700">
+        <div class="flex space-x-4">
+            <span>UTF-8</span>
+            <span id="current-format">JavaScript</span>
+        </div>
+        <div>
+            <span id="cursor-position">Ln 1, Col 1</span>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const editor = document.getElementById('rich-text-editor');
+            const lineNumbers = document.querySelector('.line-numbers');
+            const tabsContainer = document.getElementById('tabs');
+            const newTabBtn = document.getElementById('new-tab');
+            const toggleThemeBtn = document.getElementById('toggle-theme');
+            const formatBtns = document.querySelectorAll('.format-btn');
+            const saveFormatBtns = document.querySelectorAll('.save-format');
+            const fileTypeDisplay = document.getElementById('file-type');
+            const currentFormatDisplay = document.getElementById('current-format');
+            let tabCount = 1;
+            let currentTab = 0;
+            const tabs = [
+                { id: 0, name: 'index.js', content: editor.innerHTML, format: 'js' }
+            ];
+
+            // Actualizar números de línea
+            function updateLineNumbers() {
+                const text = editor.innerText || editor.textContent;
+                const lines = text.split('\n');
+                let numbers = '';
+                for (let i = 0; i < lines.length; i++) {
+                    numbers += `<div>${i + 1}</div>`;
+                }
+                lineNumbers.innerHTML = numbers;
+                
+                // Actualizar posición del cursor
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    const preCaretRange = range.cloneRange();
+                    preCaretRange.selectNodeContents(editor);
+                    preCaretRange.setEnd(range.endContainer, range.endOffset);
+                    const textContent = preCaretRange.toString();
+                    const lineNumber = (textContent.match(/\n/g) || []).length + 1;
+                    const lineText = textContent.split('\n').pop();
+                    const columnNumber = lineText.length + 1;
+                    
+                    document.getElementById('cursor-position').textContent = `Ln ${lineNumber}, Col ${columnNumber}`;
+                }
+            }
+
+            editor.addEventListener('input', updateLineNumbers);
+            editor.addEventListener('scroll', function() {
+                lineNumbers.scrollTop = editor.scrollTop;
+            });
+
+            // Manejar eventos de teclado
+            editor.addEventListener('keydown', function(e) {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    document.execCommand('insertText', false, '    ');
+                    updateLineNumbers();
+                }
+                
+                // Ctrl+S para guardar
+                if (e.ctrlKey && e.key === 's') {
+                    e.preventDefault();
+                    saveFile(tabs[currentTab].format);
+                }
+            });
+
+            // Nueva pestaña
+            newTabBtn.addEventListener('click', function() {
+                tabCount++;
+                const tabId = Date.now();
+                const tabName = `archivo-${tabCount}.txt`;
+                
+                tabs.push({
+                    id: tabId,
+                    name: tabName,
+                    content: '// Escribe tu texto o código aquí\n\n',
+                    format: 'txt'
+                });
+                
+                renderTabs();
+                switchTab(tabs.length - 1);
+                updateFileTypeDisplay('txt');
+            });
+
+            // Guardar archivo en diferentes formatos
+            saveFormatBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const format = this.getAttribute('data-format');
+                    tabs[currentTab].format = format;
+                    updateFileTypeDisplay(format);
+                    saveFile(format);
+                });
+            });
+
+            function saveFile(format) {
+                let content = editor.innerHTML;
+                let fileName = tabs[currentTab].name;
+                
+                // Actualizar el nombre del archivo según el formato
+                const baseName = fileName.split('.')[0];
+                fileName = `${baseName}.${format}`;
+                tabs[currentTab].name = fileName;
+                
+                // Procesar contenido según el formato
+                if (format === 'txt') {
+                    content = editor.innerText || editor.textContent;
+                } else if (format === 'rtf') {
+                    content = convertToRTF(editor.innerHTML);
+                } else if (format === 'html') {
+                    // Mantener el HTML como está
+                } else if (format === 'css' || format === 'js') {
+                    content = editor.innerText || editor.textContent;
+                }
+                
+                tabs[currentTab].content = content;
+                renderTabs();
+                
+                // Crear y descargar el archivo
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                alert(`Archivo "${fileName}" guardado como ${format.toUpperCase()}!`);
+            }
+
+            // Convertir a RTF (simplificado)
+            function convertToRTF(html) {
+                // Esto es una implementación básica, una real sería más compleja
+                let rtf = "{\\rtf1\\ansi\\deff0\n";
+                
+                // Convertir estilos básicos
+                html = html.replace(/<strong>/g, "\\b ");
+                html = html.replace(/<\/strong>/g, "\\b0 ");
+                html = html.replace(/<em>/g, "\\i ");
+                html = html.replace(/<\/em>/g, "\\i0 ");
+                html = html.replace(/<u>/g, "\\ul ");
+                html = html.replace(/<\/u>/g, "\\ul0 ");
+                html = html.replace(/<s>/g, "\\strike ");
+                html = html.replace(/<\/s>/g, "\\strike0 ");
+                
+                // Eliminar otras etiquetas HTML
+                html = html.replace(/<[^>]*>/g, "");
+                
+                // Añadir contenido al RTF
+                rtf += html + "\n}";
+                
+                return rtf;
+            }
+
+            // Cambiar tema
+            toggleThemeBtn.addEventListener('click', function() {
+                document.body.classList.toggle('bg-slate-900');
+                document.body.classList.toggle('bg-slate-100');
+                document.body.classList.toggle('text-slate-200');
+                document.body.classList.toggle('text-slate-800');
+                
+                const isDark = document.body.classList.contains('bg-slate-900');
+                const themeIcon = toggleThemeBtn.querySelector('i');
+                
+                if (isDark) {
+                    themeIcon.classList.remove('fa-sun');
+                    themeIcon.classList.add('fa-moon');
+                } else {
+                    themeIcon.classList.remove('fa-moon');
+                    themeIcon.classList.add('fa-sun');
+                }
+            });
+
+            // Formatos de texto
+            formatBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.id;
+                    
+                    switch(id) {
+                        case 'bold-btn':
+                            document.execCommand('bold', false, null);
+                            break;
+                        case 'italic-btn':
+                            document.execCommand('italic', false, null);
+                            break;
+                        case 'underline-btn':
+                            document.execCommand('underline', false, null);
+                            break;
+                        case 'strike-btn':
+                            document.execCommand('strikeThrough', false, null);
+                            break;
+                        case 'list-btn':
+                            document.execCommand('insertUnorderedList', false, null);
+                            break;
+                        case 'olist-btn':
+                            document.execCommand('insertOrderedList', false, null);
+                            break;
+                    }
+                    
+                    // Actualizar estado del botón
+                    this.classList.toggle('active');
+                    setTimeout(() => {
+                        this.classList.toggle('active');
+                    }, 200);
+                    
+                    updateLineNumbers();
+                });
+            });
+
+            // Actualizar visualización del tipo de archivo
+            function updateFileTypeDisplay(format) {
+                let displayText = '';
+                let icon = 'fa-file';
+                
+                switch(format) {
+                    case 'txt':
+                        displayText = 'Texto';
+                        icon = 'fa-file-alt';
+                        break;
+                    case 'rtf':
+                        displayText = 'RTF';
+                        icon = 'fa-file-word';
+                        break;
+                    case 'html':
+                        displayText = 'HTML';
+                        icon = 'fa-file-code';
+                        break;
+                    case 'css':
+                        displayText = 'CSS';
+                        icon = 'fa-file-code';
+                        break;
+                    case 'js':
+                        displayText = 'JavaScript';
+                        icon = 'fa-file-code';
+                        break;
+                    default:
+                        displayText = 'Texto';
+                        icon = 'fa-file';
+                }
+                
+                fileTypeDisplay.innerHTML = `<i class="fas ${icon} mr-1"></i>${displayText}`;
+                currentFormatDisplay.textContent = displayText;
+            }
+
+            // Renderizar pestañas
+            function renderTabs() {
+                tabsContainer.innerHTML = '';
+                
+                tabs.forEach((tab, index) => {
+                    const tabElement = document.createElement('div');
+                    tabElement.className = `tab flex items-center px-3 py-2 text-sm cursor-pointer ${index === currentTab ? 'active bg-slate-900' : 'bg-slate-800 hover:bg-slate-700'}`;
+                    tabElement.innerHTML = `
+                        <span>${tab.name}</span>
+                        <button class="ml-2 text-slate-400 hover:text-slate-200 close-tab">
+                            <i class="fas fa-times text-xs"></i>
+                        </button>
+                    `;
+                    
+                    tabElement.addEventListener('click', () => switchTab(index));
+                    
+                    const closeBtn = tabElement.querySelector('.close-tab');
+                    closeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        closeTab(index);
+                    });
+                    
+                    tabsContainer.appendChild(tabElement);
+                });
+            }
+
+            // Cambiar pestaña
+            function switchTab(index) {
+                if (index < 0 || index >= tabs.length) return;
+                
+                // Guardar contenido actual
+                if (currentTab >= 0 && currentTab < tabs.length) {
+                    tabs[currentTab].content = editor.innerHTML;
+                }
+                
+                currentTab = index;
+                editor.innerHTML = tabs[index].content;
+                updateFileTypeDisplay(tabs[index].format);
+                updateLineNumbers();
+                renderTabs();
+            }
+
+            // Cerrar pestaña
+            function closeTab(index) {
+                if (tabs.length <= 1) return;
+                
+                tabs.splice(index, 1);
+                
+                if (currentTab >= index) {
+                    currentTab = Math.max(0, currentTab - 1);
+                }
+                
+                switchTab(currentTab);
+                renderTabs();
+            }
+
+            // Inicializar
+            updateLineNumbers();
+            
+            // Manejar cambios de selección para actualizar posición del cursor
+            document.addEventListener('selectionchange', function() {
+                if (document.activeElement === editor) {
+                    updateLineNumbers();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
