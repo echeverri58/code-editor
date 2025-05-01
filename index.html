@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -19,7 +20,9 @@
         }
         .editor-content {
             tab-size: 4;
-            white-space: pre;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
         .editor-content:focus {
             outline: none;
@@ -99,6 +102,9 @@
                 <button id="olist-btn" class="format-btn px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm" title="Lista numerada">
                     <i class="fas fa-list-ol"></i>
                 </button>
+                <button id="justify-btn" class="format-btn px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm" title="Justificar">
+                    <i class="fas fa-align-justify"></i>
+                </button>
             </div>
         </div>
         <div class="flex items-center space-x-4">
@@ -110,7 +116,6 @@
             </button>
         </div>
     </div>
-
     <!-- Pestañas -->
     <div id="tabs" class="bg-slate-800 px-2 flex border-b border-slate-700 overflow-x-auto">
         <div class="tab active flex items-center px-3 py-2 text-sm cursor-pointer bg-slate-900">
@@ -120,7 +125,6 @@
             </button>
         </div>
     </div>
-
     <!-- Área del editor -->
     <div id="editor-area" class="flex-1 overflow-hidden">
         <div class="editor-container grid grid-cols-editor h-full">
@@ -137,27 +141,22 @@
                 <div>9</div>
                 <div>10</div>
             </div>
-            
             <!-- Contenido del editor -->
             <div id="rich-text-editor" class="editor-content bg-slate-900 text-slate-200 p-2 font-mono text-sm w-full h-full resize-none overflow-auto border-l border-slate-700" contenteditable="true" spellcheck="false">
 // Escribe tu código o texto aquí
 function saludar(nombre) {
     return `Hola, ${nombre}!`;
 }
-
 const mensaje = saludar("Mundo");
 console.log(mensaje);
-
 // Ejemplo de función
 function sumar(a, b) {
     return a + b;
 }
-
 // Presiona Ctrl+S para guardar
             </div>
         </div>
     </div>
-
     <!-- Barra de estado -->
     <div class="bg-slate-800 px-4 py-1 text-xs flex justify-between items-center border-t border-slate-700">
         <div class="flex space-x-4">
@@ -168,7 +167,6 @@ function sumar(a, b) {
             <span id="cursor-position">Ln 1, Col 1</span>
         </div>
     </div>
-
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const editor = document.getElementById('rich-text-editor');
@@ -185,7 +183,7 @@ function sumar(a, b) {
             const tabs = [
                 { id: 0, name: 'index.js', content: editor.innerHTML, format: 'js' }
             ];
-
+            
             // Actualizar números de línea
             function updateLineNumbers() {
                 const text = editor.innerText || editor.textContent;
@@ -207,7 +205,6 @@ function sumar(a, b) {
                     const lineNumber = (textContent.match(/\n/g) || []).length + 1;
                     const lineText = textContent.split('\n').pop();
                     const columnNumber = lineText.length + 1;
-                    
                     document.getElementById('cursor-position').textContent = `Ln ${lineNumber}, Col ${columnNumber}`;
                 }
             }
@@ -216,7 +213,7 @@ function sumar(a, b) {
             editor.addEventListener('scroll', function() {
                 lineNumbers.scrollTop = editor.scrollTop;
             });
-
+            
             // Manejar eventos de teclado
             editor.addEventListener('keydown', function(e) {
                 if (e.key === 'Tab') {
@@ -224,7 +221,6 @@ function sumar(a, b) {
                     document.execCommand('insertText', false, '    ');
                     updateLineNumbers();
                 }
-                
                 // Ctrl+S para guardar
                 if (e.ctrlKey && e.key === 's') {
                     e.preventDefault();
@@ -232,24 +228,29 @@ function sumar(a, b) {
                 }
             });
 
+            // Pegar texto plano
+            editor.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const text = (e.clipboardData || window.clipboardData).getData('text');
+                document.execCommand('insertText', false, text);
+            });
+            
             // Nueva pestaña
             newTabBtn.addEventListener('click', function() {
                 tabCount++;
                 const tabId = Date.now();
                 const tabName = `archivo-${tabCount}.txt`;
-                
                 tabs.push({
                     id: tabId,
                     name: tabName,
-                    content: '// Escribe tu texto o código aquí\n\n',
+                    content: '// Escribe tu texto o código aquí\n',
                     format: 'txt'
                 });
-                
                 renderTabs();
                 switchTab(tabs.length - 1);
                 updateFileTypeDisplay('txt');
             });
-
+            
             // Guardar archivo en diferentes formatos
             saveFormatBtns.forEach(btn => {
                 btn.addEventListener('click', function() {
@@ -259,7 +260,7 @@ function sumar(a, b) {
                     saveFile(format);
                 });
             });
-
+            
             function saveFile(format) {
                 let content = editor.innerHTML;
                 let fileName = tabs[currentTab].name;
@@ -279,7 +280,6 @@ function sumar(a, b) {
                 } else if (format === 'css' || format === 'js') {
                     content = editor.innerText || editor.textContent;
                 }
-                
                 tabs[currentTab].content = content;
                 renderTabs();
                 
@@ -293,15 +293,13 @@ function sumar(a, b) {
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-                
                 alert(`Archivo "${fileName}" guardado como ${format.toUpperCase()}!`);
             }
-
+            
             // Convertir a RTF (simplificado)
             function convertToRTF(html) {
                 // Esto es una implementación básica, una real sería más compleja
                 let rtf = "{\\rtf1\\ansi\\deff0\n";
-                
                 // Convertir estilos básicos
                 html = html.replace(/<strong>/g, "\\b ");
                 html = html.replace(/<\/strong>/g, "\\b0 ");
@@ -311,26 +309,21 @@ function sumar(a, b) {
                 html = html.replace(/<\/u>/g, "\\ul0 ");
                 html = html.replace(/<s>/g, "\\strike ");
                 html = html.replace(/<\/s>/g, "\\strike0 ");
-                
                 // Eliminar otras etiquetas HTML
                 html = html.replace(/<[^>]*>/g, "");
-                
                 // Añadir contenido al RTF
                 rtf += html + "\n}";
-                
                 return rtf;
             }
-
+            
             // Cambiar tema
             toggleThemeBtn.addEventListener('click', function() {
                 document.body.classList.toggle('bg-slate-900');
                 document.body.classList.toggle('bg-slate-100');
                 document.body.classList.toggle('text-slate-200');
                 document.body.classList.toggle('text-slate-800');
-                
                 const isDark = document.body.classList.contains('bg-slate-900');
                 const themeIcon = toggleThemeBtn.querySelector('i');
-                
                 if (isDark) {
                     themeIcon.classList.remove('fa-sun');
                     themeIcon.classList.add('fa-moon');
@@ -339,12 +332,11 @@ function sumar(a, b) {
                     themeIcon.classList.add('fa-sun');
                 }
             });
-
+            
             // Formatos de texto
             formatBtns.forEach(btn => {
                 btn.addEventListener('click', function() {
                     const id = this.id;
-                    
                     switch(id) {
                         case 'bold-btn':
                             document.execCommand('bold', false, null);
@@ -364,23 +356,23 @@ function sumar(a, b) {
                         case 'olist-btn':
                             document.execCommand('insertOrderedList', false, null);
                             break;
+                        case 'justify-btn':
+                            document.execCommand('justifyFull', false, null);
+                            break;
                     }
-                    
                     // Actualizar estado del botón
                     this.classList.toggle('active');
                     setTimeout(() => {
                         this.classList.toggle('active');
                     }, 200);
-                    
                     updateLineNumbers();
                 });
             });
-
+            
             // Actualizar visualización del tipo de archivo
             function updateFileTypeDisplay(format) {
                 let displayText = '';
                 let icon = 'fa-file';
-                
                 switch(format) {
                     case 'txt':
                         displayText = 'Texto';
@@ -406,15 +398,13 @@ function sumar(a, b) {
                         displayText = 'Texto';
                         icon = 'fa-file';
                 }
-                
                 fileTypeDisplay.innerHTML = `<i class="fas ${icon} mr-1"></i>${displayText}`;
                 currentFormatDisplay.textContent = displayText;
             }
-
+            
             // Renderizar pestañas
             function renderTabs() {
                 tabsContainer.innerHTML = '';
-                
                 tabs.forEach((tab, index) => {
                     const tabElement = document.createElement('div');
                     tabElement.className = `tab flex items-center px-3 py-2 text-sm cursor-pointer ${index === currentTab ? 'active bg-slate-900' : 'bg-slate-800 hover:bg-slate-700'}`;
@@ -424,49 +414,41 @@ function sumar(a, b) {
                             <i class="fas fa-times text-xs"></i>
                         </button>
                     `;
-                    
                     tabElement.addEventListener('click', () => switchTab(index));
-                    
                     const closeBtn = tabElement.querySelector('.close-tab');
                     closeBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
                         closeTab(index);
                     });
-                    
                     tabsContainer.appendChild(tabElement);
                 });
             }
-
+            
             // Cambiar pestaña
             function switchTab(index) {
                 if (index < 0 || index >= tabs.length) return;
-                
                 // Guardar contenido actual
                 if (currentTab >= 0 && currentTab < tabs.length) {
                     tabs[currentTab].content = editor.innerHTML;
                 }
-                
                 currentTab = index;
                 editor.innerHTML = tabs[index].content;
                 updateFileTypeDisplay(tabs[index].format);
                 updateLineNumbers();
                 renderTabs();
             }
-
+            
             // Cerrar pestaña
             function closeTab(index) {
                 if (tabs.length <= 1) return;
-                
                 tabs.splice(index, 1);
-                
                 if (currentTab >= index) {
                     currentTab = Math.max(0, currentTab - 1);
                 }
-                
                 switchTab(currentTab);
                 renderTabs();
             }
-
+            
             // Inicializar
             updateLineNumbers();
             
@@ -480,3 +462,4 @@ function sumar(a, b) {
     </script>
 </body>
 </html>
+```
